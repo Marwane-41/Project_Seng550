@@ -1,6 +1,5 @@
  
 # Marwane Zaoudi
-
 import pyspark
 import findspark
 from pyspark.sql.functions import col, when, count
@@ -40,8 +39,8 @@ cleaned_data = trip_data.select(*selected_columns)
 cleaned_data.show(10, truncate=False)
 
 # Save the cleaned data
-output_dir = "/Users/marwanezaoudi/Downloads/trip_data/cleaned_trip_data_5.csv"
-cleaned_data.coalesce(1).write.option("header", "true").csv(output_dir)     # THIS MAKES PYSPARK SAVE ALL PART IN ONE SINGLE FILE .CSV 
+#output_dir = "/Users/marwanezaoudi/Downloads/trip_data/cleaned_trip_data_5.csv"
+#cleaned_data.coalesce(1).write.option("header", "true").csv(output_dir)     # THIS MAKES PYSPARK SAVE ALL PART IN ONE SINGLE FILE .CSV 
 
-print("Data saved successfully!")
+#print("Data saved successfully!")
 
