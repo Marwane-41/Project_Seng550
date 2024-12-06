@@ -15,13 +15,13 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 # Load the CSV File
-trip_data = spark.read.csv("/Users/marwanezaoudi/Downloads/trip_data/trip_data_5.csv", header=True, inferSchema=True)
+trip_data = spark.read.csv("/Users/marwanezaoudi/Downloads/trip_data/cleaned_trip_data_3.csv", header=True, inferSchema=True)
 
 # Trim and clean column names to remove leading/trailing whitespaces     , i did this since i figured that the files has a lot of spaces and stuff like that 
 trip_data = trip_data.toDF(*[col_name.strip() for col_name in trip_data.columns])
 
 # Select the columns i want to drop using the drop in pyspark 
-droppedColumns = ["medallion", "hack_license", "rate_code"]
+droppedColumns = ["medallion", "hack_license", "rate_code", "store_and_fwd_flag"]
 cleaned_data = trip_data.drop(*droppedColumns)
 
 # creating a new column called id ( increasing numbers )
@@ -29,13 +29,17 @@ increasingId = cleaned_data.withColumn("trip_id", monotonically_increasing_id() 
 
 
 # Show the first few rows to confirm the changes
-increasingId.show(20, truncate=False)
+#increasingId.show(20, truncate=False)
+
+
 
 # Save the cleaned data
 output_dir = "/Users/marwanezaoudi/Downloads/trip_data/cleaned_trip_data_5.csv"
 increasingId.coalesce(1).write.option("header", "true").csv(output_dir)     # THIS MAKES PYSPARK SAVE ALL PART IN ONE SINGLE FILE .CSV 
 
-print("Data saved successfully!")   # for debugging purposes 
+#print("Data saved successfully!")   # for debugging purposes 
+
+#print(increasingId[increasingId['trip_distance']==0].count())  # for debugging purposes 
 
 
 
