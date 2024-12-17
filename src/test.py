@@ -43,3 +43,8 @@ increasingId.coalesce(1).write.option("header", "true").csv(output_dir)     # TH
 
 
 
+
+
+
+# need to transform and find the individual with customers_i = 0 : 
+
