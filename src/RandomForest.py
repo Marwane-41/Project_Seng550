@@ -1,4 +1,7 @@
 
+
+
+## all the sources used for leanrning are cited in the report 
 # Marwane Zaoudi
 import pyspark
 import findspark
@@ -6,7 +9,6 @@ from pyspark.sql.functions import col, when, count
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import monotonically_increasing_id
 from pyspark.ml.feature import VectorAssembler, MinMaxScaler
-
 
 from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
 from pyspark.sql.functions import hour, dayofweek
@@ -22,7 +24,6 @@ spark = SparkSession.builder \
     .config("spark.executor.memory", "4g") \
     .config("spark.sql.files.maxRecordLength", "5368709120") \
     .getOrCreate()
-
 
 # Load the CSV File
 
@@ -66,13 +67,14 @@ trip_data = spark.read.csv(file_paths, header=True, inferSchema=True)
 #print("Data saved successfully!")   # for debugging purposes 
 
 
-#bounds for triptime 
+#  
 trip_data = trip_data.filter((col("trip_time_in_secs") > 60) & (col("trip_time_in_secs") <= 7200))  # Between  1 min and 2 hours
 
-# Define bounds for passenger_count
+# 
 trip_data = trip_data.filter((col("passenger_count") > 0) & (col("passenger_count") <= 6))
 
-# Define NYC bounding box for longitude and latitude
+# 
+# according to https://www.latlong.net/place/new-york-city-ny-usa-1848.html#:~:text=Satellite%20Map%20of%20New%20York%20City%2C%20NY%2C%20USA&text=The%20latitude%20of%20New%20York,°%2056'%206.8712''%20W.
 # Approximate bounding box for NYC: (Lat: 40.4774 to 40.9176, Lon: -74.2591 to -73.7004)
 trip_data = trip_data.filter((col("pickup_latitude") >= 40.4774) & (col("pickup_latitude") <= 40.9176) &
                              (col("pickup_longitude") >= -74.2591) & (col("pickup_longitude") <= -73.7004) &
@@ -98,31 +100,34 @@ assembler = VectorAssembler(inputCols=feature_columns, outputCol="features")
 trip_data = assembler.transform(trip_data)
 
 
+
+# for debugging purposes 
+
 #trip_data.printSchema()
 #trip_data.select("features").show(5, truncate=False)
 
+# Scale the features using mixmaxscaler
 
-# Scale the features
 
 scaler = MinMaxScaler(inputCol="features", outputCol="scaled_features")
 scaler_model = scaler.fit(trip_data)
 trip_data = scaler_model.transform(trip_data)
 
+
 # Ensure the label column is numeric
 trip_data = trip_data.withColumn("trip_time_in_secs", trip_data["trip_time_in_secs"].cast("float"))
 
 
-
-# Split the data
+# now we split the data for training 
 train_data, test_data = trip_data.randomSplit([0.8, 0.2], seed=42)
 
-# Initialize GBT Regressor
+# start with the gbt 
 gbt = GBTRegressor(featuresCol="scaled_features", labelCol="trip_time_in_secs")
 
-# Set up hyperparameter grid
+# tuning the hyperparameters 
 paramGrid = ParamGridBuilder().addGrid(gbt.maxDepth, [5, 10]).addGrid(gbt.maxIter, [10, 20]).build()
 
-# Set up evaluator
+# start the eval 
 evaluator_rmse = RegressionEvaluator(labelCol="trip_time_in_secs", predictionCol="prediction", metricName="rmse")
 
 # Cross-validation
@@ -132,8 +137,6 @@ crossval = CrossValidator(estimator=gbt, estimatorParamMaps=paramGrid,
 # Train with cross-validation
 cv_model = crossval.fit(train_data)
 best_model = cv_model.bestModel
-
-# Save the best model
 
 
 # Make predictions on test data
@@ -154,6 +157,8 @@ print(f"Mean Absolute Error (MAE): {mae}")
 print(f"R² (Coefficient of Determination): {r2}")
 
 # Feature importances
+# just for debugging and figuring out the best features 
+
 print("Feature Importances:", best_model.featureImportances) 
 
 best_model.save("/Users/marwanezaoudi/Downloads")
